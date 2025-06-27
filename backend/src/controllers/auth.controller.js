@@ -60,15 +60,32 @@ export async function login(req, res) {
     const { email, password } = req.body;
 
     try {
+        // 1. Check if token already exists in cookies
+        const tokenHeader = req.cookies?.jwt;
+
+        if (tokenHeader) {
+            // 2. Verify token
+            try {
+                const decoded = jwt.verify(tokenHeader, process.env.JWT_SECRET_KEY);
+                return res.status(200).json({
+                    message: "Already logged in",
+                    userId: decoded.userId,
+                });
+            } catch (err) {
+                // If token is invalid or expired, continue to login
+                return res.status(400).json({ status: 400, success: false, message: "Invalid token, proceeding to login..." });
+                console.log("Invalid token, proceeding to login...");
+            }
+        }
         if (!email || !password) {
-            return res.status(400).json({ message: "All fields are required" });
+            return res.status(400).json({ status: 400, success: false, message: "All fields are required" });
         }
 
         const user = await User.findOne({ email });
-        if (!user) return res.status(401).json({ message: "Invalid email or password" });
+        if (!user) return res.status(401).json({ status: 400, success: false, message: "Invalid email or password" });
 
         const isPasswordCorrect = await user.matchPassword(password);
-        if (!isPasswordCorrect) return res.status(401).json({ message: "Invalid email or password" });
+        if (!isPasswordCorrect) return res.status(401).json({ status: 401, success: false, message: "Invalid email or password" });
 
         const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET_KEY, {
             expiresIn: "7d",

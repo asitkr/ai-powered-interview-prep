@@ -1,3 +1,5 @@
+import rateLimit from 'express-rate-limit';
+
 // General limiter (e.g. for all routes)
 export const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
